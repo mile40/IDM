@@ -1,3 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<LDP:Processus xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:LDP="http://www.univ-pau.fr/m2ti/2020/LDP" xsi:schemaLocation="http://www.univ-pau.fr/m2ti/2020/LDP ../../metamodels/LDP.ecore"/>
+<LDP:Processus
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:LDP="http://www.univ-pau.fr/m2ti/2020/LDP"
+    xsi:schemaLocation="http://www.univ-pau.fr/m2ti/2020/LDP ../../metamodels/LDP.ecore"/>
