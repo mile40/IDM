@@ -41,4 +41,17 @@ public class Calcul {
 		return res;
 	}
 
+	public static void main(String argv[]) {
+		Calcul calc = new Calcul();
+		int n = 6;
+		int puiss = 3;
+		int x = 100;
+		int resFact = calc.factorial(n);
+		int resSqrt = calc.sqrt(resFact);
+		int res = calc.division(calc.power(resSqrt, puiss), x);
+		System.out.println("Résultat : "+res);
+		
+		
+	}
+	
 }
