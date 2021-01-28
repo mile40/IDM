@@ -41,25 +41,33 @@ public class LDPEngine {
 	
 	
 	public void execute(String fileName, Calcul calc, HashMap<String, Object>  tags ) {
+		//on cgarge le modèle
 		Processus model = this.getPorcessusModel(fileName);
+		//récupération du debut 
 		Debut deb = model.getDebut();
-		Fin fin = model.getFin();
+		//recuperation de la première activité
 		Activite a = deb.getReference();
 		boolean fini = false;
 		
+		//tant qu'on est pas a la fin 
 		while(!fini) {
 				System.out.println("ecexution: "+a.getAction().toString());
+				//récupération des paramsTags de la fonctions a executer
 				EList<String> pt = a.getAction().getParamsTag();
+				//initialisation des paramètres aux entrées de la HashMap correspondante
 				Object params[] = new Object[pt.size()];
 				for(int j = 0; j<pt.size(); j++) {
 					params[j] = tags.get(pt.get(j));
 				}
 				try {
+					//on exécute la méthode 
 					Object o = this.dynamicInvoke(a.getAction().getMethodName(), calc, params);
 					tags.put(a.getAction().getReturnTag(), o);		
 					if (a.getSuivante() == null) {
+						//si c'est la dernière activité on termine le calcul 
 						fini = true;
 					}else {
+						//sinon on passe a  l'activité suivante et on recommence
 						a = a.getSuivante();
 					}
 				} catch (Exception e) {
