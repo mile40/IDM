@@ -41,7 +41,7 @@ public class Calcul {
 		return res;
 	}
 
-	public static void main(String argv[]) {
+	/*public static void main(String argv[]) {
 		Calcul calc = new Calcul();
 		int n = 6;
 		int puiss = 3;
@@ -52,6 +52,6 @@ public class Calcul {
 		System.out.println("Résultat : "+res);
 		
 		
-	}
+	}*/
 	
 }
