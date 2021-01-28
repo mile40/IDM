@@ -13,7 +13,7 @@ public class Calcul {
 		return val1-val2;
 	}
 	
-	public Integer division(Integer val1, Integer val2) {
+	public Integer divide(Integer val1, Integer val2) {
 		return val1/val2;
 	}
 	
