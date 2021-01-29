@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LDP:Processus
+    xmi:version="2.0"
+    xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:LDP="http://www.univ-pau.fr/m2ti/2020/LDP"
+    xsi:schemaLocation="http://www.univ-pau.fr/m2ti/2020/LDP LDP.ecore">
+  <activites
+      description="Addition1"
+      suivante="//@activites.3">
+    <action
+        methodName="addition"
+        returnTag="subres1">
+      <paramsTag>x1</paramsTag>
+      <paramsTag>y1</paramsTag>
+    </action>
+  </activites>
+  <activites
+      description="Soustraction"
+      suivante="//@activites.2"
+      precedente="//@activites.3">
+    <action
+        methodName="substraction"
+        returnTag="res2">
+      <paramsTag>x2</paramsTag>
+      <paramsTag>y2</paramsTag>
+    </action>
+  </activites>
+  <activites
+      description="Multiplication"
+      precedente="//@activites.1">
+    <action
+        methodName="multiplication"
+        returnTag="res">
+      <paramsTag>res1</paramsTag>
+      <paramsTag>res2</paramsTag>
+    </action>
+  </activites>
+  <activites
+      description="Addition2"
+      suivante="//@activites.1"
+      precedente="//@activites.0">
+    <action
+        methodName="addition"
+        returnTag="res1">
+      <paramsTag>subres1</paramsTag>
+      <paramsTag>z1</paramsTag>
+    </action>
+  </activites>
+  <debut reference="//@activites.0"/>
+  <fin reference="//@activites.2"/>
+</LDP:Processus>
