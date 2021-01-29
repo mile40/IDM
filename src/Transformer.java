@@ -14,7 +14,12 @@ import org.eclipse.emf.ecore.xmi.XMLResource;
 import org.eclipse.emf.ecore.xmi.XMLResource.XMLMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMLMapImpl;
+
+import LDP.*;
+import LDP.LDPPackage;
+
 import LDPparallel.LDPparallelPackage;
+import LDPparallel.*;
 
 public class Transformer {
 	
@@ -52,7 +57,7 @@ public class Transformer {
 	}
 
 	public LDP.Processus getProcessusInModel(String modelFile) {
-        Resource resource = chargerModele(modelFile, LDPparallelPackage.eINSTANCE);
+        Resource resource = chargerModele(modelFile, LDPPackage.eINSTANCE);
         if (resource == null) {
             System.err.println(" Erreur de chargement du modèle");
             return null;
@@ -81,71 +86,92 @@ public class Transformer {
 		return new_act;
 	}
 	
+	public LDP.Activite getPremiereActivite(LDP.Processus p){
+		
+		return p.getDebut().getReference();
+		
+	}
 	
 	public void transform(String basename, String endname) {
+		
+		// (x + y) * (z - a)
+		
 		System.out.println(" Chargement du modèle");
 		System.out.println(" ");
 		
 		LDP.Processus proc = this.getProcessusInModel(basename);
-		boolean seq_activity = false;
+
+		//LDPparallel.Processus new_proc = LDPparallel.LDPparallelFactory.eINSTANCE.createProcessus();
+		//EList<LDP.Activite> list_act = proc.getActivites();
 		
-		LDPparallel.Processus new_proc = LDPparallel.LDPparallelFactory.eINSTANCE.createProcessus();
+		List<LDP.Activite> ordered_list = new ArrayList<LDP.Activite>();
 		
-		LDPparallel.Sequence new_seq;
-		LDPparallel.Activite new_act;
+		LDPparallel.Activite new_act = LDPparallel.LDPparallelFactory.eINSTANCE.createActivite();
+		new_act = copyActivite( getPremiereActivite(proc) );
 		
-		List<LDPparallel.Sequence> new_list_seq = new ArrayList();
-		
-		EList<LDP.Activite> list_act = proc.getActivites();
-		
-		for(int act = 0; act<list_act.size(); act++) {
-			
-			seq_activity = false;
-			
-			for(int aux = 0; aux< list_act.size(); aux++) {
-				
-				EList<String> aux_params = list_act.get(aux).getAction().getParamsTag();
-				
-				for(int aux_params_index = 0 ; aux_params_index < aux_params.size(); aux_params_index++) {
-					
-					if( !list_act.get(act).getAction().getReturnTag().equals(aux_params.get(aux_params_index)) ) {
-							
-						seq_activity = true;
-						
-					}
-					else seq_activity = false;
-					
-				}
-				
-				if(seq_activity) {
-					
-					new_seq = LDPparallel.LDPparallelFactory.eINSTANCE.createSequence();
-					List<LDPparallel.Activite> new_list_act = new ArrayList();
-					new_act = LDPparallel.LDPparallelFactory.eINSTANCE.createActivite();
-					new_act = this.copyActivite(list_act.get(act));
-					new_list_act.add(new_act);
-					new_seq.getActivites().addAll(new_list_act);
-					new_seq.setPremiereActivite(new_act);
-					new_list_seq.add(new_seq);
-					new_proc.getSequences().addAll(new_list_seq);
-					//parallel_activities.add( copyActivity(list_act.get(act)) );
-					
-				}
-				
+		// Ranger les activités dans l'ordre d'execution
+		LDP.Activite a = getPremiereActivite(proc);
+		boolean fini = false;
+		while(!fini) {
+			ordered_list.add(a);
+			if(a.getSuivante() == null) {
+				fini = true;
 			}
-			
+			else {
+				a = a.getSuivante();
+			}
 		}
-	
+		
+		// Mettre les activités dans des sequences differentes
+		List<LDPparallel.Sequence> seq_list = new ArrayList<LDPparallel.Sequence>();
+		LDPparallel.Sequence new_seq; 
+		for(int i=0; i<ordered_list.size(); i++) {
+			
+			for(int j=0; j<seq_list.size(); j++) {
+				
+				if(seq_list.size() == 0) {
+					new_seq = LDPparallel.LDPparallelFactory.eINSTANCE.createSequence();
+					new_seq.getActivites().add( copyActivite(ordered_list.get(i)) );
+					seq_list.add(new_seq);
+				}
+				else {
+					for(int k=0; k<seq_list.get(j).getActivites().size(); k++) {
+						
+						for(int l=0; l<seq_list.get(j).getActivites().get(k).getAction().getParamsTag().size(); l++) {
+							
+							if( !seq_list.get(j).getActivites().get(k).getAction().getParamsTag().get(l).equals( ordered_list.get(i).getAction().getReturnTag() ) ) {
+								new_seq = LDPparallel.LDPparallelFactory.eINSTANCE.createSequence();
+								new_seq.getActivites().add( copyActivite(ordered_list.get(i)) );
+								seq_list.add(new_seq);
+							}
+							else {
+								seq_list.get(j).getActivites().add( copyActivite(ordered_list.get(i)) );
+							}
+						}
+					}
+				}			
+			}
+		}
 		
 		
-		System.out.println(" Sauvegarde du modèle");
-		this.sauverModele(endname, proc);
+		// Le test
+		for(int i=0; i<seq_list.size(); i++) {
+			System.out.print("Sequence" + i +" -> ");
+			for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
+				System.out.print("A" + j +", ");
+			}
+			System.out.println(" ");
+		}
+		
+		
+		//System.out.println(" Sauvegarde du modèle");
+		//this.sauverModele(endname, proc);
 		
 	}
 	
 	public static void main(String argV[]) {
 		Transformer t = new Transformer();
-		t.transform("models/Processus-seq.xmi", "models/Processus-par.xmi");
+		t.transform("models/Calcul.xmi", "models/Calcul-par.xmi");
 	}
 	
 }
