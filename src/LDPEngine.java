@@ -89,6 +89,7 @@ public class LDPEngine {
 		Processus proc = null;
 		while(it.hasNext()) {
 		   EObject obj = (EObject) it.next();
+		   
 		   if (obj instanceof Processus) {
 		      proc = (Processus)obj;
 		      break;

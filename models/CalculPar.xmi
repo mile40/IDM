@@ -67,12 +67,12 @@
       </action>
     </activites>
   </sequences>
-  <portes xsi:type="LDPparallel:Fourche"
-      pred="//@sequences.0"
-      succ="//@sequences.1 //@sequences.2"/>
   <portes xsi:type="LDPparallel:Jonction"
       pred="//@sequences.1 //@sequences.2"
       succ="//@sequences.3"/>
+  <portes xsi:type="LDPparallel:Fourche"
+      pred="//@sequences.0"
+      succ="//@sequences.1 //@sequences.2"/>
   <debut reference="//@sequences.0"/>
   <fin reference="//@sequences.3"/>
 </LDPparallel:Processus>
