@@ -15,19 +15,17 @@ import org.eclipse.emf.ecore.xmi.impl.XMLMapImpl;
 
 import LDP.Activite;
 import LDP.Debut;
-import LDP.Fin;
 import LDP.LDPPackage;
 import LDP.Processus;
+import LDPparallel.Activite.*;
+import LDPparallel.ElementProcessus;
+import LDPparallel.LDPparallelPackage;
 
-public class LDPEngine {
+public class LDPParEngine {
+
 	String fn;
 	Object bs;
 	HashMap<String, Object> tags;
-	public void engine(String fileName, Object business, HashMap<String, Object> tags) {
-		this.tags = tags;
-		this.fn = fileName;
-		this.bs = business;
-	}
 	
 	public Object dynamicInvoke(String methodName, Object target, Object params[]) throws Exception {
 		   Class cl = target.getClass();
@@ -46,40 +44,15 @@ public class LDPEngine {
 		//récupération du debut 
 		Debut deb = model.getDebut();
 		//recuperation de la première activité
-		Activite a = deb.getReference();
+		ElementProcessus a = (ElementProcessus) deb.getReference();
+		System.out.println(""+  a.getClass().getName());
+		
 		boolean fini = false;
 		
-		//tant qu'on est pas a la fin 
-		while(!fini) {
-				System.out.println("ecexution: "+a.getAction().toString());
-				//récupération des paramsTags de la fonctions a executer
-				EList<String> pt = a.getAction().getParamsTag();
-				//initialisation des paramètres aux entrées de la HashMap correspondante
-				Object params[] = new Object[pt.size()];
-				for(int j = 0; j<pt.size(); j++) {
-					params[j] = tags.get(pt.get(j));
-				}
-				try {
-					//on exécute la méthode 
-					Object o = this.dynamicInvoke(a.getAction().getMethodName(), calc, params);
-					//on rajoute le returnTag à la HashMap
-					tags.put(a.getAction().getReturnTag(), o);		
-					if (a.getSuivante() == null) {
-						//si c'est la dernière activité on termine le calcul 
-						fini = true;
-					}else {
-						//sinon on passe a  l'activité suivante et on recommence
-						a = a.getSuivante();
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-					fini = true;
-				}
-		}	
 	}
 	
 	public Processus getPorcessusModel(String file) {
-		Resource res = this.chargerModele(file, LDPPackage.eINSTANCE);
+		Resource res = this.chargerModele(file, LDPparallelPackage.eINSTANCE);
 		if(res == null) {
 			System.err.println("ERREUR chargement du modèle: ");
 		}
@@ -120,12 +93,14 @@ public class LDPEngine {
 	public static void main(String argv[]) {
 		HashMap<String, Object> tags = new HashMap<String, Object>();
 		tags.put("n", 6);
-		tags.put("puiss", 3);
-		tags.put("x", 100);
+		tags.put("x1", 4);
+		tags.put("x2", 3);
+		tags.put("x3", 7);
+		tags.put("x4", 4);
 		Calcul calc = new Calcul();
-		LDPEngine engine = new LDPEngine();
-		engine.execute("models/Calcul.xmi", calc, tags);
-		System.out.println("Le résultat vaut:" + tags.get("resDiv"));
+		LDPParEngine engine = new LDPParEngine();
+		engine.execute("models/CalculPar.xmi", calc, tags);
+		System.out.println("Le résultat vaut:" + tags.get("resAdd2"));
 		System.out.println("j'ai fini");
 	}
 }

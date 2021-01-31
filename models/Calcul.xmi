@@ -6,27 +6,8 @@
     xmlns:LDP="http://www.univ-pau.fr/m2ti/2020/LDP"
     xsi:schemaLocation="http://www.univ-pau.fr/m2ti/2020/LDP LDP.ecore">
   <activites
-      description="division"
-      precedente="//@activites.3">
-    <action
-        methodName="divide"
-        returnTag="resDiv">
-      <paramsTag>resPower</paramsTag>
-      <paramsTag>x</paramsTag>
-    </action>
-  </activites>
-  <activites
-      description="factorielle"
-      suivante="//@activites.2">
-    <action
-        methodName="factorial"
-        returnTag="resFact">
-      <paramsTag>n</paramsTag>
-    </action>
-  </activites>
-  <activites
       description="racine carree"
-      suivante="//@activites.3"
+      suivante="//@activites.2"
       precedente="//@activites.1">
     <action
         methodName="sqrt"
@@ -35,9 +16,18 @@
     </action>
   </activites>
   <activites
+      description="factorielle"
+      suivante="//@activites.0">
+    <action
+        methodName="factorial"
+        returnTag="resFact">
+      <paramsTag>n</paramsTag>
+    </action>
+  </activites>
+  <activites
       description="puissance"
-      suivante="//@activites.0"
-      precedente="//@activites.2">
+      suivante="//@activites.3"
+      precedente="//@activites.0">
     <action
         methodName="power"
         returnTag="resPower">
@@ -45,6 +35,16 @@
       <paramsTag>puiss</paramsTag>
     </action>
   </activites>
+  <activites
+      description="division"
+      precedente="//@activites.2">
+    <action
+        methodName="divide"
+        returnTag="resDiv">
+      <paramsTag>resPower</paramsTag>
+      <paramsTag>x</paramsTag>
+    </action>
+  </activites>
   <debut reference="//@activites.1"/>
-  <fin reference="//@activites.0"/>
+  <fin reference="//@activites.3"/>
 </LDP:Processus>
