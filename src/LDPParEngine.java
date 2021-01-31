@@ -2,6 +2,10 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.TreeIterator;
@@ -15,35 +19,107 @@ import org.eclipse.emf.ecore.xmi.XMLResource.XMLMap;
 import org.eclipse.emf.ecore.xmi.impl.XMIResourceFactoryImpl;
 import org.eclipse.emf.ecore.xmi.impl.XMLMapImpl;
 
-import LDP.Activite;
+
 import LDPparallel.*;
 
 public class LDPParEngine {
-
-	String fn;
-	Object bs;
-	public static HashMap<String, Object> tags;
-	public static int i;
-	private Calcul calc;
+	private Processus process = null;
+	private ConcurrentHashMap<Integer, Thread> threadMap = new ConcurrentHashMap<>();
+	private List<Integer> jonctions = new CopyOnWriteArrayList<>();
+	private Object lock = new Object();
+	private AtomicBoolean fini = new AtomicBoolean(false);
 	
-	public Object dynamicInvoke(String methodName, Object target, Object params[]) throws Exception {
-		   Class cl = target.getClass();
-		   Class[] paramsClass = new Class[params.length];
-		   for (int i=0; i < params.length; i++)
-		      paramsClass[i] = params[i].getClass();
-		   Method met = cl.getMethod(methodName, paramsClass);
-		   Object result = met.invoke(target, params);
-		   return result;
-		}
-	
-	public HashMap<String, Object>execSeq(Sequence s, HashMap<String, Object> tags){
+	public void execute(Processus model, Object target, HashMap<String, Object> tags) {
+		this.process = model;
+		ElementProcessus firstElem = model.getDebut().getReference();
 		
-		LDPparallel.Activite a = s.getPremiereActivite();
-		boolean fini = false;
+		try {
+			handleElt(firstElem, tags, target);
+			
+			while(!fini.get()) {
+				Thread.sleep(100);
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private void handleElt(ElementProcessus elt, HashMap<String, Object> tags, Object target) throws Exception {
+		if(elt instanceof Fin) {
+			fini.set(true);
+			return;
+		}
+		if(elt instanceof Sequence || elt instanceof Porte) {
+			Thread t = new Thread(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						//si notre élément est une Fourche
+						if(elt instanceof Fourche) {
+							Fourche f = (Fourche) elt;
+							
+							for(ElementProcessus e: f.getSucc()) {
+								handleElt(e, tags, target);
+							}
+							//si c'est une jonction
+						}else if(elt instanceof Jonction) {
+							Jonction j = (Jonction) elt;
+							
+							synchronized(lock) {
+								if(!jonctions.stream().anyMatch(e -> e == j.hashCode())) {
+									jonctions.add(j.hashCode());
+								}else {
+									return;
+								}
+								
+								for(ElementProcessus e: j.getPred()) {
+									threadMap.get(e.hashCode()).join();
+									handleElt(j.getSucc(), tags, target);
+								}
+							}
+							//dans tous les autres cas
+						}else if (elt instanceof Sequence) {
+							Sequence s = (Sequence) elt;
+							Activite a = s.getPremiereActivite();
+							s.setPremiereActivite(a);
+							execSeq(s, target, tags);
+							//on détermine quelle porte suit
+							for(Porte p: process.getPortes()) {
+								//si la porte suivante est une jonction
+								if(p instanceof Jonction && ((Jonction)p).getPred().stream().anyMatch(e->e==s) ) {
+									handleElt(p, tags, target);
+								}else if(p instanceof Fourche && ((Fourche)p).getPred() == s) {
+									handleElt(p, tags, target);
+								}
+									
+							}
+							//on appelle récursivement sur le successeur 
+							 if(process.getFin().getReference() == s){
+	                        		handleElt(process.getFin(), tags, target); 
+	                         }
+						}
+					}catch(Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+			});
+			threadMap.put(elt.hashCode(), t);
+			t.start();
+		}
+
+		
+	}
+	
+	public void execSeq(Sequence s, Object calc, HashMap<String, Object>  tags ) {
+		
+		Activite a = s.getPremiereActivite();
+		boolean fini = false;	
 		//tant qu'on est pas a la fin 
 		while(!fini) {
 				System.out.println("ecexution: "+a.getAction().toString());
-				//récupération des paramsTags de la fonctions a executer
+	
 				EList<String> pt = a.getAction().getParamsTag();
 				//initialisation des paramètres aux entrées de la HashMap correspondante
 				Object params[] = new Object[pt.size()];
@@ -67,43 +143,18 @@ public class LDPParEngine {
 					fini = true;
 				}
 		}	
-		return tags;
 	}
 	
-	public boolean checkEntries(List<String> tags, HashMap<String, Object> map) {
-		for(int i = 0; i < tags.size(); i++) {
-			if(!map.containsKey(tags.get(i))) {
-				return false;
-			}
-		
+	public Object dynamicInvoke(String methodName, Object target, Object params[]) throws Exception {
+		   Class cl = target.getClass();
+		   Class[] paramsClass = new Class[params.length];
+		   for (int i=0; i < params.length; i++)
+		      paramsClass[i] = params[i].getClass();
+		   Method met = cl.getMethod(methodName, paramsClass);
+		   Object result = met.invoke(target, params);
+		   return result;
 		}
-		return true;
-	}
-	public HashMap<String, Object> execute(String fileName, Calcul calc, HashMap<String, Object>  tags ) {
-		HashMap<String, Object>  temp = tags;
-		//on charge le modèle
-		Processus model = this.getPorcessusModel(fileName);
-		EList<Sequence> seqList = model.getSequences();
-		for(int i = 0; i < seqList.size(); i++) {
-			this.i = i;
-			System.out.println("je commence le thread");
-			Thread t = new Thread() {
-				public void run() {
-					while(!checkEntries(seqList.get(LDPParEngine.i).getPremiereActivite().getAction().getParamsTag(), LDPParEngine.tags)) {
-						System.out.println("j'attent ntm");
-					}
-					LDPParEngine.tags = execSeq(seqList.get(LDPParEngine.i), temp);
-					System.out.println("je finis le thread");
-				}
-			};
-			t.start();
-		}
-		
-		
-		tags = temp;
-		return tags;
-		
-	}
+	
 	
 	public Processus getPorcessusModel(String file) {
 		Resource res = this.chargerModele(file, LDPparallelPackage.eINSTANCE);
@@ -145,25 +196,6 @@ public class LDPParEngine {
 		   return resource;
 		}
 	
-	public void setCalcul(Calcul calc) {
-		this.calc = calc;
-	}
-	
-	public Calcul getCalcul() {
-		return this.calc;
-	}
-	public static void main(String argv[]) {
-		HashMap<String, Object> tags = new HashMap<String, Object>();
-		tags.put("n", 7);
-		tags.put("x1", 1);
-		tags.put("x2", 7);
-		tags.put("x3", 6);
-		tags.put("x4", 3);
-	
-		LDPParEngine engine = new LDPParEngine();
-		engine.setCalcul(new Calcul());
-		engine.execute("models/CalculPar.xmi", engine.getCalcul(), tags);
-		System.out.println("Le résultat vaut:" + tags.get("resAdd2"));
-		System.out.println("j'ai fini");
-	}
+
+
 }
