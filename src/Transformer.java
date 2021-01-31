@@ -93,11 +93,36 @@ public class Transformer {
 		
 	}
 	
+	public boolean memeSequence(LDPparallel.Sequence s1, LDPparallel.Sequence s2) {
+		if(s1.getActivites().get(0).getDescription().equals(s2.getActivites().get(0).getDescription())) {
+			return true;
+		}
+		else return false;
+	}
+	
 	public boolean memeActivite(LDPparallel.Activite a1, LDPparallel.Activite a2) {
 		if(a1.getDescription().equals(a2.getDescription())) {
 			return true;
 		}
 		else return false;
+	}
+	
+	public LDPparallel.Porte getPortePrecFromSequence(LDPparallel.Sequence to_test, LDPparallel.Sequence s, List<LDPparallel.Porte> lp){
+		for(LDPparallel.Porte new_p : lp) {
+			if(new_p.getClass() == LDPparallel.Fourche.class) {
+				
+			}
+		}
+		return null;
+	}
+	
+	public LDPparallel.Porte getPorteSuivFromSequence( LDPparallel.Sequence s, List<LDPparallel.Porte> lp){
+		for(LDPparallel.Porte new_p : lp) {
+			if(new_p.getClass() == LDPparallel.Fourche.class) {
+				
+			}
+		}
+		return null;
 	}
 	
 	public void transform(String basename, String endname) {
@@ -110,20 +135,9 @@ public class Transformer {
 		LDP.Processus proc = LDP.LDPFactory.eINSTANCE.createProcessus();
 		proc = this.getProcessusInModel(basename);
 
-		//LDPparallel.Processus new_proc = LDPparallel.LDPparallelFactory.eINSTANCE.createProcessus();
-		//EList<LDP.Activite> list_act = proc.getActivites();
-		
-		System.out.println("Liste Activités :");
-		System.out.println(proc.getActivites().toString());
+		LDPparallel.Processus new_proc = LDPparallel.LDPparallelFactory.eINSTANCE.createProcessus();
 		
 		List<LDP.Activite> ordered_list = new ArrayList<LDP.Activite>();
-		
-		LDPparallel.Activite new_act = LDPparallel.LDPparallelFactory.eINSTANCE.createActivite();
-		new_act = copyActivite( getPremiereActivite(proc) );
-		
-		System.out.println(" ");
-		System.out.println("Premiere Activité :");
-		System.out.println(new_act.toString());
 		
 		// Ranger les activités dans l'ordre d'execution
 		LDP.Activite a = getPremiereActivite(proc);
@@ -138,32 +152,22 @@ public class Transformer {
 			}
 		}
 		
-		System.out.println(" ");
-		System.out.println("Liste ordonnée :");
-		System.out.println(ordered_list.toString());
-		
 		List<LDPparallel.Sequence> seq_list = new ArrayList<LDPparallel.Sequence>();
 		LDPparallel.Sequence new_seq; 
 		
 		System.out.println(" ");
-		System.out.println("Creation Liste Sequence vide:");
+		System.out.println("Creation Liste Sequence vide");
 		for(int i=0; i<ordered_list.size(); i++) {
 			new_seq = LDPparallel.LDPparallelFactory.eINSTANCE.createSequence();
 			seq_list.add(new_seq);
 		}
-		System.out.println("seq_list size : " + seq_list.size());
 		
-		
-		System.out.println(" ");
-		System.out.println("Rangement en sequence :");
-		// Mettre la 1ere activité dans la 1ere sequence
-		//seq_list.get(0).getActivites().add( copyActivite(ordered_list.get(0)) );
 		
 		// Mettre les activités dans des sequences differentes
+		System.out.println(" ");
+		System.out.println("Rangement dans les sequences");
 		List<Integer> index_precedents = new ArrayList<Integer>();
 		for(int i=0; i<ordered_list.size(); i++) { // Parcours des activités MIN = 0,  MAX = nombre d'activités
-			
-			System.out.println(ordered_list.get(i).getDescription());
 			
 			int nb_precedents = 0;
 			index_precedents.clear();
@@ -204,11 +208,111 @@ public class Transformer {
 		// Le test pour voir si les activités sont biens rangées
 		System.out.println(" ");
 		for(int i=0; i<seq_list.size(); i++) {
-			System.out.print("Sequence" + i +" -> ");
-			for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
-				System.out.print(seq_list.get(i).getActivites().get(j).getDescription() + ", ");
+			if(seq_list.get(i).getActivites().isEmpty()) { // Detruit les sequences vides
+				seq_list.remove(i);
 			}
-			System.out.println(" ");
+			else {
+				System.out.print("Sequence" + i +" -> ");
+				for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
+					System.out.print(seq_list.get(i).getActivites().get(j).getDescription() + ", ");
+				}
+				System.out.println(" ");
+			}
+			
+		}
+		
+		
+		// On fixe la 1ere activité et on fixe les suivants de chaque sequence
+		for(int i=0; i<seq_list.size(); i++) {
+			for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
+				if( j == 0 ) { // 1ere activité d'une sequence
+					seq_list.get(i).setPremiereActivite(seq_list.get(i).getActivites().get(j));
+					if( seq_list.get(i).getActivites().size() > 1 ) { // Si l'activité n'est pas seule dans la liste
+						seq_list.get(i).getActivites().get(j).setSuivante(seq_list.get(i).getActivites().get(j+1));
+						seq_list.get(i).getActivites().get(j).setPrecedente(null); // TODO les jonctions ou Fin
+					}
+					else { // Si elle est seule dans la liste
+						seq_list.get(i).getActivites().get(j).setSuivante(null); // TODO les jonctions ou Fin ( Derniere activité de la sequence )
+						seq_list.get(i).getActivites().get(j).setPrecedente(null); // TODO les fourches ou Fin
+					}
+				}
+				else { // Pas 1ere activité de la sequence
+					if( seq_list.get(i).getActivites().size() > j+1 ) { // Si la taille de la sequence est plus grande que la position de l'activité dans la sequence
+						seq_list.get(i).getActivites().get(j).setSuivante(seq_list.get(i).getActivites().get(j+1)); // Suivante de l'activité J de la sequence I
+					}
+					else {
+						seq_list.get(i).getActivites().get(j).setSuivante(null); // TODO les jonctions ou Fin ( Derniere activité de la sequence )
+					}
+					seq_list.get(i).getActivites().get(j).setPrecedente(seq_list.get(i).getActivites().get(j-1)); // Precedente de l'activité J de la sequence I 
+				}			
+			}
+		}
+		
+		
+		// Le test pour voir si les activités se suivent et se precedent bien
+		System.out.println(" ");
+		for(int i=0; i<seq_list.size(); i++) {
+			System.out.println(" <-------- Sequence " + i + " --------> ");
+			for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
+				System.out.println(" **** Activité " + seq_list.get(i).getActivites().get(j).getDescription() +" **** ");
+				if( seq_list.get(i).getActivites().get(j).getPrecedente() != null ) {
+					System.out.println(" Precedente : " + seq_list.get(i).getActivites().get(j).getPrecedente().getDescription());
+				}
+				if( seq_list.get(i).getActivites().get(j).getSuivante() != null ) {
+					System.out.println(" Suivante : " + seq_list.get(i).getActivites().get(j).getSuivante().getDescription());
+				}		
+			}
+			System.out.println(" ");			
+		}
+		
+		
+		// Creation des fourches + jonctions
+		
+		List<LDPparallel.Porte> porte_list = new ArrayList<LDPparallel.Porte>();
+		List<LDPparallel.Sequence> seq_traitees = new ArrayList<LDPparallel.Sequence>();
+		List<Integer> index_seq_traitees = new ArrayList<Integer>();
+		
+		LDPparallel.Debut new_debut = LDPparallel.LDPparallelFactory.eINSTANCE.createDebut();
+		LDPparallel.Fin new_fin = LDPparallel.LDPparallelFactory.eINSTANCE.createFin();
+		
+		
+		// Verifier combien de sequences n'ont pas de predecesseurs
+		// Pour commencer soit par une fourche soit par une sequence simple
+		List<Integer> premieres_seq = new ArrayList<Integer>();
+		int nb_seq_pred = 0;
+		for(int i=0; i<seq_list.size(); i++) {
+			nb_seq_pred = 0;
+			LDPparallel.Activite i_act = seq_list.get(i).getPremiereActivite(); // Premiere activité de la sequence I
+			for(int j=0; j<seq_list.size(); j++) {
+				LDPparallel.Activite j_act = seq_list.get(j).getActivites().get( seq_list.get(j).getActivites().size() - 1); // Derniere activité des sequences J
+				for(int k=0; k<i_act.getAction().getParamsTag().size(); k++) {
+					// Si l'un des parametres de la 1ere Activite de la sequence I = Retour de la derniere Activité de la sequence J
+					if( i_act.getAction().getParamsTag().get(k).equals(j_act.getAction().getReturnTag()) ) { 
+						nb_seq_pred++;
+						break; // On sort direct si on en trouve un
+					}
+				}
+			}
+			if( nb_seq_pred == 0 ) { // Si il n'y a pas de sequences qui precedent 
+				premieres_seq.add(i);
+			}
+		}
+		LDPparallel.Fourche new_fourche = LDPparallel.LDPparallelFactory.eINSTANCE.createFourche();
+		
+		if(premieres_seq.size() > 1) { // On commence par une fourche
+			new_fourche.setPred(new_debut);
+			for(int i = 0; i<premieres_seq.size(); i++) { 
+				new_fourche.getSucc().add( seq_list.get( premieres_seq.get(i) ) );
+			}
+			new_debut.setReference(new_fourche);
+			porte_list.add(new_fourche);
+		}
+		
+		else { // On commence par une sequence
+			new_debut.setReference( seq_list.get( premieres_seq.get(0)) );
+			new_fourche.setPred( seq_list.get( premieres_seq.get(0)) );
+			porte_list.add(new_fourche);
+			
 		}
 		
 		
@@ -217,7 +321,7 @@ public class Transformer {
 		
 	}
 	
-	public static void main(String argV[]) {
+	public static void main(String argv[]) {
 		Transformer t = new Transformer();
 		t.transform("models/Calcul_seq.xmi", "models/Calcul_par.xmi");
 	}
