@@ -22,7 +22,6 @@ import LDPparallel.LDPparallelPackage;
 import LDPparallel.*;
 
 public class Transformer {
-	
 	public void sauverModele(String uri, EObject root) {
 		Resource resource = null;
 		try {
@@ -107,22 +106,40 @@ public class Transformer {
 		else return false;
 	}
 	
-	public LDPparallel.Porte getPortePrecFromSequence(LDPparallel.Sequence to_test, LDPparallel.Sequence s, List<LDPparallel.Porte> lp){
-		for(LDPparallel.Porte new_p : lp) {
-			if(new_p.getClass() == LDPparallel.Fourche.class) {
-				
+	public boolean isPorteCreated(LDPparallel.Sequence s, List<LDPparallel.Sequence> list_suiv, List<LDPparallel.Porte> list_porte) {
+		for(int i=0; i<list_porte.size(); i++) {
+			if(list_porte.get(i) instanceof Fourche) {
+				Fourche f = (Fourche) list_porte.get(i);
+				if(list_suiv.equals( f.getSucc() )) {
+					return true;
+				}		
+			}
+			else {
+				Jonction j = (Jonction) list_porte.get(i);
+				if( j.getSucc().equals( list_suiv.get(0) ) ) {
+					return true;
+				}
 			}
 		}
-		return null;
+		return false;
 	}
 	
-	public LDPparallel.Porte getPorteSuivFromSequence( LDPparallel.Sequence s, List<LDPparallel.Porte> lp){
-		for(LDPparallel.Porte new_p : lp) {
-			if(new_p.getClass() == LDPparallel.Fourche.class) {
-				
+	public int getPorteIndex(LDPparallel.Sequence s, List<LDPparallel.Sequence> list_suiv, List<LDPparallel.Porte> list_porte){
+		for(int i=0; i<list_porte.size(); i++) {
+			if(list_porte.get(i) instanceof Fourche) {
+				Fourche f = (Fourche) list_porte.get(i);
+				if(list_suiv.equals( f.getSucc() )) {
+					return i;
+				}		
+			}
+			else {
+				Jonction j = (Jonction) list_porte.get(i);
+				if( j.getSucc().equals( list_suiv.get(0) ) ) {
+					return i;
+				}
 			}
 		}
-		return null;
+		return -1;
 	}
 	
 	public void transform(String basename, String endname) {
@@ -159,6 +176,7 @@ public class Transformer {
 		System.out.println("Creation Liste Sequence vide");
 		for(int i=0; i<ordered_list.size(); i++) {
 			new_seq = LDPparallel.LDPparallelFactory.eINSTANCE.createSequence();
+			new_seq.setName("Sequence " + i);
 			seq_list.add(new_seq);
 		}
 		
@@ -211,13 +229,13 @@ public class Transformer {
 			if(seq_list.get(i).getActivites().isEmpty()) { // Detruit les sequences vides
 				seq_list.remove(i);
 			}
-			else {
+			/*else {
 				System.out.print("Sequence" + i +" -> ");
 				for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
 					System.out.print(seq_list.get(i).getActivites().get(j).getDescription() + ", ");
 				}
 				System.out.println(" ");
-			}
+			}*/
 			
 		}
 		
@@ -250,7 +268,7 @@ public class Transformer {
 		
 		
 		// Le test pour voir si les activités se suivent et se precedent bien
-		System.out.println(" ");
+		/*System.out.println(" ");
 		for(int i=0; i<seq_list.size(); i++) {
 			System.out.println(" <-------- Sequence " + i + " --------> ");
 			for(int j=0; j<seq_list.get(i).getActivites().size(); j++) {
@@ -263,7 +281,7 @@ public class Transformer {
 				}		
 			}
 			System.out.println(" ");			
-		}
+		}*/
 		
 		
 		// Creation des fourches + jonctions
@@ -315,10 +333,124 @@ public class Transformer {
 			
 		}
 		
+		// Construction de la liste de SeqSuiv
+		List<SeqSuiv> seq_suiv = new ArrayList<SeqSuiv>();
+		for(int i=0; i<seq_list.size(); i++) {
+			seq_suiv.add( new SeqSuiv(seq_list.get(i)) );
+			for(int j=0; j<seq_list.size(); j++) {
+				if( j != i ) { 
+					for(int k=0; k<seq_list.get(j).getPremiereActivite().getAction().getParamsTag().size(); k++) {
+						if( seq_list.get(i).getActivites().get( seq_list.get(i).getActivites().size() - 1).getAction().getReturnTag().equals(seq_list.get(j).getPremiereActivite().getAction().getParamsTag().get(k)) ) {
+							// Si le tag de retour de la dernire activité de la Sequence I = l'un des tag parametre de la prmeiere activité de la sequence J
+							seq_suiv.get(i).list_suiv.add( seq_list.get(j) );
+						}
+					}				
+				}
+			}
+		}
 		
-		//System.out.println(" Sauvegarde du modèle");
-		//this.sauverModele(endname, proc);
+		//Affichage SeqSuiv
+		for(int i=0; i<seq_suiv.size(); i++) {
+			System.out.println("<----- Sequence " + i + " -----> ");
+			System.out.println(" *** Activités *** ");
+			for(int j=0; j<seq_suiv.get(i).seq.getActivites().size(); j++) {
+				System.out.println( seq_suiv.get(i).seq.getActivites().get(j).getDescription() );
+			}
+			for(int j=0; j<seq_suiv.get(i).list_suiv.size(); j++) {
+				System.out.println(" *** Sequence suivante *** ");
+				for(int k=0; k<seq_suiv.get(i).list_suiv.get(j).getActivites().size(); k++) {
+					System.out.println( seq_suiv.get(i).list_suiv.get(j).getActivites().get(k).getDescription() );
+				}
+			}
+			System.out.println(" ");
+		}
 		
+		
+		
+		//Transfo
+		for(int i=0; i<seq_suiv.size(); i++) {
+			if( seq_suiv.get(i).list_suiv.size() == 0 ) { // Sequence de fin
+				new_fin.setReference(seq_suiv.get(i).seq);
+			}
+			else if( !isPorteCreated( seq_suiv.get(i).seq, seq_suiv.get(i).list_suiv, porte_list ) ) { // Si la porte n'est pas déja crée
+				if( seq_suiv.get(i).list_suiv.size() > 1) { // Creation Fourche
+					LDPparallel.Fourche new_f = LDPparallel.LDPparallelFactory.eINSTANCE.createFourche(); 
+					new_f.setPred(seq_suiv.get(i).seq);
+					new_f.getSucc().addAll(seq_suiv.get(i).list_suiv);
+					porte_list.add(new_f);
+				}
+				else { // Creation Jonction
+					LDPparallel.Jonction new_j = LDPparallel.LDPparallelFactory.eINSTANCE.createJonction();
+					new_j.getPred().add(seq_suiv.get(i).seq);
+					new_j.setSucc(seq_suiv.get(i).list_suiv.get(0));
+					porte_list.add(new_j);
+				}
+			}
+			else { // Modification Porte ( Jonction )
+				int index_porte = getPorteIndex( seq_suiv.get(i).seq, seq_suiv.get(i).list_suiv, porte_list );
+				Jonction j = ( Jonction ) porte_list.get(index_porte);
+				j.getPred().add( seq_suiv.get(i).seq );
+				porte_list.set(index_porte, j);
+			}
+		}
+		
+		// Test transfo
+		System.out.println(" ");
+		for(int i=0; i<porte_list.size(); i++) {
+			System.out.println("<----- " + porte_list.get(i).getClass().getName() + " ----->");
+			if(porte_list.get(i) instanceof Fourche) { // Si c'est une Fourche
+				System.out.println("*** Successeurs ***");
+				for(int j=0; j< ((Fourche) porte_list.get(i)).getSucc().size(); j++) { // Recuperation des Successeurs
+					System.out.println("- Sequence -");
+					for(int k=0; k< ((Sequence) ((Fourche) porte_list.get(i)).getSucc().get(j) ).getActivites().size(); k++) {
+						System.out.println( ((LDPparallel.Activite) ((Sequence) ((Fourche) porte_list.get(i)).getSucc().get(j) ).getActivites().get(k)).getDescription() );
+					}
+				}
+				System.out.println("*** Predecesseurs ***");
+				if( ((Fourche) porte_list.get(i)).getPred() instanceof LDPparallel.Debut ) {
+					System.out.println("Debut");
+				}
+				else {
+					System.out.println("- Sequence -");
+					for(int k=0; k< ((Sequence) ((Fourche) porte_list.get(i)).getSucc().get(0) ).getActivites().size(); k++) {
+						System.out.println( ((LDPparallel.Activite) ((Sequence) ((Fourche) porte_list.get(i)).getSucc().get(0) ).getActivites().get(k)).getDescription() );
+					}
+				}
+			}
+			
+			else { // Si c'est une Jonction
+				System.out.println("*** Successeurs ***");
+				System.out.println("- Sequence -");
+				for(int k=0; k< ((Sequence) ((Jonction) porte_list.get(i)).getSucc() ).getActivites().size(); k++) {
+					System.out.println( ((LDPparallel.Activite) ((Sequence) ((Jonction) porte_list.get(i)).getSucc()).getActivites().get(k)).getDescription() );
+				}
+				System.out.println("*** Predecesseurs ***");
+				for(int j=0; j< ((Jonction) porte_list.get(i)).getPred().size(); j++) { // Recuperation des Successeurs
+					System.out.println("- Sequence -");
+					for(int k=0; k< ((Sequence) ((Jonction) porte_list.get(i)).getPred().get(j) ).getActivites().size(); k++) {
+						System.out.println( ((LDPparallel.Activite) ((Sequence) ((Jonction) porte_list.get(i)).getPred().get(j) ).getActivites().get(k)).getDescription() );
+					}
+				}
+			}
+			System.out.println(" ");
+		}
+		
+		new_proc.setDebut(new_debut);
+		new_proc.setFin(new_fin);
+		new_proc.getSequences().addAll(seq_list);
+		new_proc.getPortes().addAll(porte_list);
+		
+		System.out.println(" Sauvegarde du modèle");
+		this.sauverModele(endname, new_proc);
+		
+	}
+	
+	private class SeqSuiv{
+		LDPparallel.Sequence seq;
+		List<LDPparallel.Sequence> list_suiv = new ArrayList();
+		public SeqSuiv(LDPparallel.Sequence s) {
+			seq = s;
+		}
 	}
 	
 	public static void main(String argv[]) {

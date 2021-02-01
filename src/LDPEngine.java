@@ -51,7 +51,7 @@ public class LDPEngine {
 		
 		//tant qu'on est pas a la fin 
 		while(!fini) {
-				System.out.println("ecexution: "+a.getAction().toString());
+				System.out.println("execution: "+a.getAction().toString());
 				//récupération des paramsTags de la fonctions a executer
 				EList<String> pt = a.getAction().getParamsTag();
 				//initialisation des paramètres aux entrées de la HashMap correspondante

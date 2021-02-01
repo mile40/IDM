@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="ASCII"?>
+<LDPparallel:Processus xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:LDPparallel="http://www.univ-pau.fr/m2ti/2020/LDP-parallel">
+  <sequences name="Sequence 0" premiereActivite="//@sequences.0/@activites.0">
+    <activites description="Addition1" suivante="//@sequences.0/@activites.1">
+      <action methodName="addition" returnTag="subres1">
+        <paramsTag>x1</paramsTag>
+        <paramsTag>y1</paramsTag>
+      </action>
+    </activites>
+    <activites description="Addition2" precedente="//@sequences.0/@activites.0">
+      <action methodName="addition" returnTag="res1">
+        <paramsTag>subres1</paramsTag>
+        <paramsTag>z1</paramsTag>
+      </action>
+    </activites>
+  </sequences>
+  <sequences name="Sequence 1" premiereActivite="//@sequences.1/@activites.0">
+    <activites description="Soustraction">
+      <action methodName="substraction" returnTag="res2">
+        <paramsTag>x2</paramsTag>
+        <paramsTag>y2</paramsTag>
+      </action>
+    </activites>
+  </sequences>
+  <sequences name="Sequence 2" premiereActivite="//@sequences.2/@activites.0">
+    <activites description="Multiplication">
+      <action methodName="multiplication" returnTag="res">
+        <paramsTag>res1</paramsTag>
+        <paramsTag>res2</paramsTag>
+      </action>
+    </activites>
+  </sequences>
+  <portes xsi:type="LDPparallel:Fourche" pred="//@debut" succ="//@sequences.0 //@sequences.1"/>
+  <portes xsi:type="LDPparallel:Jonction" pred="//@sequences.0 //@sequences.1" succ="//@sequences.2"/>
+  <debut reference="//@portes.0"/>
+  <fin reference="//@sequences.2"/>
+</LDPparallel:Processus>

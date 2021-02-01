@@ -21,18 +21,18 @@ public class Main {
 
 	public static void main(String argv[]) {
 		HashMap<String, Object> tags = new HashMap<String, Object>();
-		tags.put("n", 7);
-		tags.put("x1", 1);
-		tags.put("x2", 7);
-		tags.put("x3", 6);
-		tags.put("x4", 3);
+		tags.put("y1", 10);
+		tags.put("x1", 10);
+		tags.put("z1", 10);
+		tags.put("x2", 4);
+		tags.put("y2", 2);
 	
 		LDPParEngine engine = new LDPParEngine();
 		Calcul calc = new Calcul();
-		Resource res = engine.chargerModele("models/calculPar.xmi", LDPparallelPackage.eINSTANCE);
-		Processus model = engine.getPorcessusModel("models/calculPar.xmi");
+		Resource res = engine.chargerModele("models/Calcul_par.xmi", LDPparallelPackage.eINSTANCE);
+		Processus model = engine.getPorcessusModel("models/Calcul_par.xmi");
 		engine.execute(model, calc , tags);
-		System.out.println("Le résultat vaut:" + tags.get("resAdd2"));
+		System.out.println("Le résultat vaut:" + tags.get("res"));
 	}
 
 }
